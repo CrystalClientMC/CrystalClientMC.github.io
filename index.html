@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Games</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Base styles for the body, adapted for dark mode */
+        body {
+            overflow: hidden; /* Hide scrollbars due to snowflakes going off-screen */
+            font-family: "Comic Sans MS", "Comic Sans", cursive; /* Comic Sans font */
+            display: flex; /* Use flexbox for centering content */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            margin: 0;
+            background-color: #333; /* Darkish grey background as requested */
+            color: #f0f0f0; /* Light text for contrast */
+            position: relative; /* Needed for positioning the fade background */
+            perspective: 800px; /* For 3D panel effect */
+        }
+
+        /* Style for the outside panel background fade */
+        #panel-fade-background {
+            position: absolute;
+            background: linear-gradient(to bottom right, rgba(0, 123, 255, 0.25), rgba(0, 123, 255, 0.08)); /* Blue fade for dark mode */
+            border-radius: 15px; /* Slightly larger border-radius than panel */
+            filter: blur(40px); /* Increased blur for a softer, more expansive glow */
+            z-index: 0; /* Place behind the middle panel */
+            transform: rotateY(0deg) rotateX(0deg) scale(1.15); /* Initial state, larger scale */
+            opacity: 1; /* Always visible */
+            transition: background 0.3s ease, transform 0.06s ease-out; /* Smooth transition for mouse-follow */
+            transform-style: preserve-3d; /* Preserve 3D transformations */
+        }
+
+        .middle-panel {
+            background-color: #1f2937; /* Darker panel background (gray-800) as previously requested */
+            padding: 40px;
+            border-radius: 8px; /* Rounded corners for the panel */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* More pronounced shadow for dark mode */
+            text-align: center;
+            max-width: 500px; /* Limit panel width */
+            width: 90%; /* Responsive width */
+            transform: rotateY(0deg) rotateX(0deg) scale(1); /* Initial state for panel */
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease-out, box-shadow 0.3s ease;
+            border: 2px solid #555; /* Darker border for dark mode */
+            z-index: 1; /* Ensure panel is above snow and fade background */
+            position: relative; /* For z-index to work and for ::before positioning */
+            transform-style: preserve-3d; /* Preserve 3D transformations for children */
+            overflow: hidden; /* Hide overflow for pseudo-element */
+        }
+
+        /* Blue fade effect on the inside of the panel using ::before */
+        .middle-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom right, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.03)); /* Blue fade on the inside, subtle for dark mode */
+            border-radius: 8px; /* Match panel border-radius */
+            z-index: -1; /* Place behind panel content */
+            opacity: 0; /* Hidden by default */
+            transition: background 0.3s ease, opacity 0.3s ease; /* Smooth transition for fade effect */
+        }
+
+        /* Hover state for the middle panel (JS adds/removes .panel-hovered class) */
+        .middle-panel.panel-hovered {
+            transform: scale(1.15); /* Make it bigger, no rotation from hover */
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); /* Even more pronounced shadow on hover */
+        }
+
+        /* Show inside fade when panel is hovered */
+        .middle-panel.panel-hovered::before {
+            opacity: 1;
+        }
+
+        /* Snow Effect Styles */
+        #snow-container {
+            position: fixed; /* Fixed position to cover the entire viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through to elements below */
+            z-index: 0; /* Ensure snow is behind content */
+            display: block; /* Always visible in this dark mode setup */
+        }
+
+        .snowflake {
+            position: absolute;
+            background-color: #fff; /* White snowflakes */
+            border-radius: 50%; /* Make them round */
+            opacity: 0.8;
+            animation: fall linear infinite; /* Apply fall animation */
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) translateX(0); /* Start from its initial 'top' position */
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.8; /* Become visible shortly after starting to fall */
+            }
+            100% {
+                transform: translateY(calc(100vh + 250px)) translateX(var(--x-end)); /* Fall beyond the bottom of the viewport */
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#333] text-white flex items-center justify-center min-h-screen relative">
+
+    <!-- Snow Container -->
+    <div id="snow-container"></div>
+
+    <!-- New element for the blue fade background (outside effect) -->
+    <div id="panel-fade-background"></div>
+
+    <div class="middle-panel">
+        <h1 class="text-lg md:text-xl text-white">
+            No Games D:
+        </h1>
+        <p class="mt-4 text-lg md:text-xl text-gray-300">
+            Check back later for updates!
+        </p>
+    </div>
+
+    <script>
+        const body = document.body;
+        const middlePanel = document.querySelector('.middle-panel');
+        const snowContainer = document.getElementById('snow-container');
+        const panelFadeBackground = document.getElementById('panel-fade-background');
+
+        let isPanelHovered = false;
+
+        // Function to create and animate snowflakes
+        function createSnowflakes() {
+            const numberOfSnowflakes = 50; // Keeping original number of snowflakes
+            for (let i = 0; i < numberOfSnowflakes; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+
+                // Random size for variety
+                const size = Math.random() * 5 + 2; // 2px to 7px
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+
+                // Random starting position (x-axis)
+                snowflake.style.left = `${Math.random() * 100}vw`;
+                // Set initial top position off-screen to ensure they start falling from above
+                snowflake.style.top = `${Math.random() * -200 - 50}px`; // Start between -50px and -250px above the viewport
+
+                // Random animation duration and delay for staggered effect
+                const duration = Math.random() * 10 + 5; // 5s to 15s
+                snowflake.style.animationDuration = `${duration}s`;
+                snowflake.style.animationDelay = `${Math.random() * 10}s`;
+
+                // Random horizontal drift for the snowflake
+                const xEnd = (Math.random() - 0.5) * 200; // -100px to 100px drift
+                snowflake.style.setProperty('--x-end', `${xEnd}px`);
+
+                snowContainer.appendChild(snowflake);
+            }
+        }
+
+        // --- JavaScript for Panel Mouse-Follow Effect ---
+        document.addEventListener('mousemove', (event) => {
+            const mouseX = event.clientX;
+            const mouseY = event.clientY;
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            const offsetX = (mouseX - centerX) / centerX;
+            const offsetY = (mouseY - centerY) / centerY;
+
+            const maxRotation = 12;
+
+            const rotateYValue = offsetX * maxRotation;
+            const rotateXValue = -offsetY * maxRotation;
+
+            if (!isPanelHovered) {
+                middlePanel.style.transform = `rotateY(${rotateYValue}deg) rotateX(${rotateXValue}deg) scale(1)`;
+                panelFadeBackground.style.transform = `rotateY(${rotateYValue}deg) rotateX(${rotateXValue}deg) scale(1.15)`;
+            } else {
+                // When hovered, ensure they are reset to their non-rotated state
+                middlePanel.style.transform = `scale(1.15)`; // Only scale, no rotation
+                panelFadeBackground.style.transform = `scale(1.15)`; // Only scale, no rotation
+            }
+
+            // Position the fade background relative to the panel's center
+            const panelRect = middlePanel.getBoundingClientRect();
+            const fadeExtra = 80; // Extra space for the blur effect
+            panelFadeBackground.style.width = `${panelRect.width + fadeExtra}px`;
+            panelFadeBackground.style.height = `${panelRect.height + fadeExtra}px`;
+            panelFadeBackground.style.left = `${panelRect.left - fadeExtra / 2}px`;
+            panelFadeBackground.style.top = `${panelRect.top - fadeExtra / 2}px`;
+        });
+
+        // Event listeners for panel hover
+        middlePanel.addEventListener('mouseenter', () => {
+            isPanelHovered = true;
+            middlePanel.classList.add('panel-hovered');
+        });
+
+        middlePanel.addEventListener('mouseleave', () => {
+            isPanelHovered = false;
+            middlePanel.classList.remove('panel-hovered');
+        });
+
+        // Initialize snowflakes on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            createSnowflakes();
+        });
+    </script>
+
+</body>
+</html>
